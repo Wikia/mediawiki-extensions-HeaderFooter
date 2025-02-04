@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Parser\ParserOutput;
 
 /**
@@ -7,7 +8,14 @@ use MediaWiki\Parser\ParserOutput;
  */
 class HeaderFooter {
 
-	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ): void {
+	public static function onOutputPageParserOutput( OutputPage &$outputPage, ParserOutput $parserOutput ) {
+		foreach ( [ 'hf_nsheader', 'hf_header', 'hf_footer', 'hf_nsfooter' ] as $prop ) {
+		LoggerFactory::getInstance(self::class)->info('NOLL set ' . $prop);
+			$outputPage->setProperty( $prop, $parserOutput->getPageProperty( $prop ) );
+		}
+	}
+
+	public static function onOutputPageBeforeHTML( $out, &$text ): void {
 		$action = $out->getRequest()->getVal( "action" );
 		if ( ( $action == 'edit' ) || ( $action == 'submit' ) || ( $action == 'history' ) ) {
 			return;
@@ -16,15 +24,13 @@ class HeaderFooter {
 		$title = $out->getTitle();
 		$ns = $title->getNsText();
 		$name = $title->getPrefixedDBKey();
-		$meta = $out->getMetadata();
 
-		$nsheader = self::conditionalInclude( 'hf_nsheader', 'hf-nsheader', $ns, $meta );
-		$header   = self::conditionalInclude( 'hf_header', 'hf-header', $name, $meta );
-		$footer   = self::conditionalInclude( 'hf_footer', 'hf-footer', $name, $meta );
-		$nsfooter = self::conditionalInclude( 'hf_nsfooter', 'hf-nsfooter', $ns, $meta );
+		$nsheader = self::conditionalInclude( 'hf_nsheader', 'hf-nsheader', $ns, $out );
+		$header   = self::conditionalInclude( 'hf_header', 'hf-header', $name, $out );
+		$footer   = self::conditionalInclude( 'hf_footer', 'hf-footer', $name, $out );
+		$nsfooter = self::conditionalInclude( 'hf_nsfooter', 'hf-nsfooter', $ns, $out );
 
-		$text = $out->mBodytext;
-		$out->mBodytext = $nsheader . $header . $text . $footer . $nsfooter;
+		$text = '<div class="mw-parser-output">'. $nsheader . $header . $text . $footer . $nsfooter . '</div>';
 
 		global $egHeaderFooterEnableAsyncHeader, $egHeaderFooterEnableAsyncFooter;
 		if ( $egHeaderFooterEnableAsyncFooter || $egHeaderFooterEnableAsyncHeader ) {
@@ -51,9 +57,12 @@ class HeaderFooter {
 	 * @param ParserOutput $meta
 	 * @return null|string
 	 */
-	public static function conditionalInclude( string $disableWord, string $class, string $unique, ParserOutput $meta ):
+	public static function conditionalInclude( string $disableWord, string $class, string $unique, OutputPage $out ):
 	?string {
-		if ( $meta->getPageProperty( $disableWord ) !== null ) {
+		LoggerFactory::getInstance(self::class)->info('NOLL render ' . $disableWord);
+
+		if ( $out->getProperty( $disableWord ) !== null ) {
+			LoggerFactory::getInstance(self::class)->info("NOLL block " . $disableWord);
 			return null;
 		}
 

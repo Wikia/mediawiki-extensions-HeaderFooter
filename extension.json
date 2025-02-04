@@ -16,7 +16,8 @@
 		"getheaderfooter": "ApiGetHeaderFooter"
 	},
 	"Hooks": {
-		"BeforePageDisplay": "HeaderFooter::onBeforePageDisplay",
+		"OutputPageParserOutput": "HeaderFooter::onOutputPageParserOutput",
+		"OutputPageBeforeHTML": "HeaderFooter::onOutputPageBeforeHTML",
 		"ResourceLoaderGetConfigVars": "HeaderFooter::onResourceLoaderGetConfigVars",
 		"GetDoubleUnderscoreIDs": "HeaderFooter::onGetDoubleUnderscoreIDs"
 	},
